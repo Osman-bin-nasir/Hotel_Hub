@@ -1,9 +1,21 @@
-<%- include('../partials/header') %>
+<%- include('../partials/header', { title: 'Booking Confirmed' }) %>
 <%- include('../partials/nav') %>
 
-<h2>Booking Confirmed!</h2>
-<p>You booked <strong><%= booking.room.name %></strong></p>
-<p>Check-in: <%= booking.checkIn.toDateString() %></p>
-<p>Check-out: <%= booking.checkOut.toDateString() %></p>
+<div class="container mt-4">
+  <h2>Booking Confirmed</h2>
+  <% if (success && success.length > 0) { %>
+    <div class="alert alert-success">
+      <%= success %>
+    </div>
+  <% } %>
+  <h4>Booking Details</h4>
+  <p><strong>Room:</strong> <%= booking.room.name %></p>
+  <p><strong>Name:</strong> <%= booking.name %></p>
+  <p><strong>Email:</strong> <%= booking.email %></p>
+  <p><strong>Phone:</strong> <%= booking.phone %></p>
+  <p><strong>Check-In:</strong> <%= new Date(booking.checkIn).toLocaleDateString() %></p>
+  <p><strong>Check-Out:</strong> <%= new Date(booking.checkOut).toLocaleDateString() %></p>
+  <a href="/bookings" class="btn btn-primary">View All Bookings</a>
+</div>
 
 <%- include('../partials/footer') %>

@@ -22,8 +22,8 @@ connectDB();
 // ========================
 app.use(helmet());
 app.use(rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // Limit each IP to 100 requests per windowMs
 }));
 
 // ========================
@@ -56,10 +56,10 @@ app.use(session({
   store: sessionStore,
   cookie: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 2,
+    secure: process.env.NODE_ENV === 'production', // Secure in production
+    maxAge: 1000 * 60 * 60 * 2, // 2 hours
     signed: true,
-    sameSite: 'lax' // Added to ensure cookie persistence
+    sameSite: 'lax'
   }
 }));
 
@@ -67,7 +67,11 @@ app.use(flash());
 
 // Log session for debugging
 app.use((req, res, next) => {
-  console.log('Session on request:', req.session);
+  console.log('🔍 Session on request:', {
+    sessionID: req.sessionID,
+    userId: req.session.userId,
+    path: req.path
+  });
   next();
 });
 
@@ -108,11 +112,11 @@ app.use((req, res) => {
 //  General Error Handler
 // ========================
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error:', err.stack);
   const statusCode = err.statusCode || 500;
   res.status(statusCode).render('error', {
     title: `${statusCode} Error`,
-    error: err,
+    error: { message: err.message || 'An unexpected error occurred' },
     currentPath: req.path,
     session: req.session
   });
@@ -124,4 +128,4 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-})
+});

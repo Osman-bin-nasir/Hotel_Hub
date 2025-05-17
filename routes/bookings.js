@@ -3,7 +3,26 @@ const { ensureAuth } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
 const Booking = require('../models/Booking');
 const Room = require('../models/Room');
+const User = require('../models/User');
 const router = express.Router();
+
+// GET User's Bookings (Booking List)
+router.get('/', ensureAuth, async (req, res, next) => {
+  try {
+    const bookings = await Booking.find({ user: req.session.userId })
+      .populate('room user')
+      .lean();
+
+    res.render('user/booking-list', {
+      title: 'Booking List',
+      bookings,
+      success: req.flash('success'), // Add flash messages
+      session: req.session
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // GET Booking Form
 router.get('/new/:roomId', ensureAuth, async (req, res, next) => {
@@ -15,12 +34,19 @@ router.get('/new/:roomId', ensureAuth, async (req, res, next) => {
       return res.redirect('/rooms');
     }
 
-    res.render('user/booking-form', {
+    const user = await User.findById(req.session.userId).lean();
+
+    const renderData = {
       title: `Book ${room.name}`,
       room,
+      user,
       errors: [],
-      session: req.session // Added session for nav.ejs
-    });
+      formData: {},
+      session: req.session
+    };
+    console.log('🔍 [GET /bookings/new] Rendering data:', renderData);
+
+    res.render('user/booking-form', renderData);
   } catch (err) {
     next(err);
   }
@@ -36,20 +62,29 @@ router.post('/', ensureAuth, [
         throw new Error('Check-out must be after check-in');
       }
       return true;
-    })
+    }),
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('phone').matches(/^[0-9]{10}$/).withMessage('Phone number must be 10 digits')
 ], async (req, res, next) => {
   try {
+    console.log('🔍 [POST /bookings] Form data:', req.body);
     const errors = validationResult(req);
-    const { roomId, checkIn, checkOut } = req.body;
+    const { roomId, checkIn, checkOut, name, email, phone } = req.body;
     
     if (!errors.isEmpty()) {
       const room = await Room.findById(roomId);
-      return res.render('user/booking-form', {
+      const user = await User.findById(req.session.userId).lean();
+      const renderData = {
         title: `Book ${room.name}`,
         room,
+        user,
         errors: errors.array(),
-        session: req.session // Added session for nav.ejs
-      });
+        formData: req.body || {},
+        session: req.session
+      };
+      console.log('🔍 [POST /bookings] Rendering data on validation error:', renderData);
+      return res.render('user/booking-form', renderData);
     }
 
     // Availability Check
@@ -63,12 +98,17 @@ router.post('/', ensureAuth, [
 
     if (existingBooking) {
       const room = await Room.findById(roomId);
-      return res.render('user/booking-form', {
+      const user = await User.findById(req.session.userId).lean();
+      const renderData = {
         title: `Book ${room.name}`,
         room,
+        user,
         errors: [{ msg: 'Room not available for selected dates' }],
-        session: req.session // Added session for nav.ejs
-      });
+        formData: req.body || {},
+        session: req.session
+      };
+      console.log('🔍 [POST /bookings] Rendering data on availability error:', renderData);
+      return res.render('user/booking-form', renderData);
     }
 
     // Create Booking
@@ -76,8 +116,16 @@ router.post('/', ensureAuth, [
       user: req.session.userId,
       room: roomId,
       checkIn: new Date(checkIn),
-      checkOut: new Date(checkOut)
+      checkOut: new Date(checkOut),
+      name,
+      email,
+      phone
     });
+
+    // Update room availability
+    const room = await Room.findById(roomId);
+    room.isAvailable = false;
+    await room.save();
 
     req.flash('success', 'Booking confirmed!');
     res.redirect(`/bookings/confirm/${booking._id}`);
@@ -101,8 +149,37 @@ router.get('/confirm/:id', ensureAuth, async (req, res, next) => {
       title: 'Booking Confirmed',
       booking,
       success: req.flash('success'),
-      session: req.session // Added session for nav.ejs
+      session: req.session
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE Booking
+router.delete('/:id', ensureAuth, async (req, res, next) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      req.flash('error', 'Booking not found');
+      return res.redirect('/bookings');
+    }
+
+    if (booking.user.toString() !== req.session.userId) {
+      req.flash('error', 'Unauthorized');
+      return res.redirect('/bookings');
+    }
+
+    const room = await Room.findById(booking.room);
+    if (room) {
+      room.isAvailable = true;
+      await room.save();
+    }
+
+    await Booking.deleteOne({ _id: req.params.id });
+
+    req.flash('success', 'Booking canceled successfully');
+    res.redirect('/bookings');
   } catch (err) {
     next(err);
   }

@@ -1,14 +1,41 @@
-<%- include('../partials/header') %>
+<%- include('../partials/header', { title: 'Book Room' }) %>
 <%- include('../partials/nav') %>
 
-<h2>Book: <%= room.name %></h2>
-<form method="POST" action="/bookings">
-  <input type="hidden" name="roomId" value="<%= room._id %>">
-  <label>Check-in: <input type="date" name="checkIn"></label>
-  <label>Check-out: <input type="date" name="checkOut"></label>
-  <button type="submit">Confirm Booking</button>
-</form>
-
-<% errors.forEach(e => { %><p style="color:red;"><%= e.msg %></p><% }) %>
+<div class="container mt-4">
+  <h2>Book Room: <%= room.name %></h2>
+  <% if (errors && Array.isArray(errors) && errors.length > 0) { %>
+    <div class="alert alert-danger">
+      <ul>
+        <% errors.forEach(error => { %>
+          <li><%= error.msg %></li>
+        <% }) %>
+      </ul>
+    </div>
+  <% } %>
+  <form method="POST" action="/bookings">
+    <input type="hidden" name="roomId" value="<%= room._id %>">
+    <div class="form-group">
+      <label>Name:</label>
+      <input type="text" name="name" class="form-control" value="<%= (formData?.name || user?.name || '') %>" required>
+    </div>
+    <div class="form-group">
+      <label>Email ID:</label>
+      <input type="email" name="email" class="form-control" value="<%= (formData?.email || user?.email || '') %>" required>
+    </div>
+    <div class="form-group">
+      <label>Phone Number:</label>
+      <input type="tel" name="phone" class="form-control" pattern="[0-9]{10}" placeholder="Enter 10-digit phone number" value="<%= (formData?.phone || '') %>" required>
+    </div>
+    <div class="form-group">
+      <label>Check-In Date:</label>
+      <input type="date" name="checkIn" class="form-control" value="<%= (formData?.checkIn || '') %>" required>
+    </div>
+    <div class="form-group">
+      <label>Check-Out Date:</label>
+      <input type="date" name="checkOut" class="form-control" value="<%= (formData?.checkOut || '') %>" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Confirm Booking</button>
+  </form>
+</div>
 
 <%- include('../partials/footer') %>

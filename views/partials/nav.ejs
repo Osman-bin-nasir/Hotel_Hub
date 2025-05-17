@@ -10,7 +10,7 @@
   <% } else { %>
     <% if (typeof session !== 'undefined') { %>
       <a href="/bookings" class="<%= (currentPath || '').startsWith('/bookings') ? 'active' : '' %>">
-        My Bookings
+        Booking List
       </a>
       <% if (session.role === 'admin') { %>
         <a href="/admin" class="<%= (currentPath || '').startsWith('/admin') ? 'active' : '' %>">
