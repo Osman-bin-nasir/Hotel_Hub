@@ -48,9 +48,10 @@ sessionStore.on('error', (error) => {
   console.error('Session store error:', error);
 });
 
+// Ensure session middleware is before flash
 app.use(session({
   name: 'sid',
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || 'default-secret', // Fallback if SESSION_SECRET is not defined
   resave: false,
   saveUninitialized: false,
   store: sessionStore,

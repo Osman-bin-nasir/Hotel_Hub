@@ -11,7 +11,9 @@ router.get('/register', (req, res) => {
     res.render('auth/register', { 
       title: 'Register',
       errors: [],
-      csrfToken: null
+      csrfToken: null,
+      currentPath: req.path,
+      session: req.session
     });
   } catch (err) {
     console.error('Error rendering auth/register:', err);
@@ -36,7 +38,9 @@ router.post('/register', [
     return res.render('auth/register', {
       title: 'Register',
       errors: errors.array(),
-      csrfToken: null
+      csrfToken: null,
+      currentPath: req.path,
+      session: req.session
     });
   }
 
@@ -49,7 +53,9 @@ router.post('/register', [
       return res.render('auth/register', {
         title: 'Register',
         errors: [{ msg: 'Email already in use' }],
-        csrfToken: null
+        csrfToken: null,
+        currentPath: req.path,
+        session: req.session
       });
     }
 
@@ -65,7 +71,9 @@ router.post('/register', [
         return res.render('auth/register', {
           title: 'Register',
           errors: [{ msg: 'Session save failed' }],
-          csrfToken: null
+          csrfToken: null,
+          currentPath: req.path,
+          session: req.session
         });
       }
       console.log('Session saved successfully after registration:', req.session);
@@ -76,7 +84,9 @@ router.post('/register', [
     res.render('auth/register', {
       title: 'Register',
       errors: [{ msg: 'Registration failed' }],
-      csrfToken: null
+      csrfToken: null,
+      currentPath: req.path,
+      session: req.session
     });
   }
 });
@@ -86,7 +96,10 @@ router.get('/login', (req, res) => {
   res.render('auth/login', { 
     title: 'Login',
     errors: [],
-    csrfToken: null
+    success: req.flash('success'),
+    csrfToken: null,
+    currentPath: req.path,
+    session: req.session
   });
 });
 
@@ -101,7 +114,10 @@ router.post('/login', [
     return res.render('auth/login', {
       title: 'Login',
       errors: errors.array(),
-      csrfToken: null
+      success: req.flash('success'),
+      csrfToken: null,
+      currentPath: req.path,
+      session: req.session
     });
   }
 
@@ -115,7 +131,10 @@ router.post('/login', [
       return res.render('auth/login', {
         title: 'Login',
         errors: [{ msg: 'Invalid credentials' }],
-        csrfToken: null
+        success: req.flash('success'),
+        csrfToken: null,
+        currentPath: req.path,
+        session: req.session
       });
     }
 
@@ -125,7 +144,10 @@ router.post('/login', [
       return res.render('auth/login', {
         title: 'Login',
         errors: [{ msg: 'Invalid credentials' }],
-        csrfToken: null
+        success: req.flash('success'),
+        csrfToken: null,
+        currentPath: req.path,
+        session: req.session
       });
     }
 
@@ -138,7 +160,10 @@ router.post('/login', [
         return res.render('auth/login', {
           title: 'Login',
           errors: [{ msg: 'Session save failed' }],
-          csrfToken: null
+          success: req.flash('success'),
+          csrfToken: null,
+          currentPath: req.path,
+          session: req.session
         });
       }
       console.log('Session saved successfully after login:', req.session);
@@ -149,17 +174,23 @@ router.post('/login', [
     res.render('auth/login', {
       title: 'Login',
       errors: [{ msg: 'Login failed' }],
-      csrfToken: null
+      success: req.flash('success'),
+      csrfToken: null,
+      currentPath: req.path,
+      session: req.session
     });
   }
 });
 
 // GET /logout
-router.get('/logout', (req, res) => {
+router.get('/logout', (req, res, next) => {
   console.log('Logging out user:', req.session.userId);
-  req.session.destroy(err => {
+  // Set flash message before destroying the session
+  req.flash('success', 'You have been logged out successfully');
+  req.session.destroy((err) => {
     if (err) {
       console.error('Error during logout:', err);
+      return next(err);
     }
     res.clearCookie('sid');
     res.redirect('/auth/login');
