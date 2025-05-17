@@ -1,0 +1,14 @@
+<%- include('../partials/header') %>
+<%- include('../partials/nav') %>
+
+<h2><%= room.name %></h2>
+<p><%= room.description %></p>
+<p>Price: $<%= room.price %></p>
+
+<% if (session.userId) { %>
+  <a href="/bookings/new/<%= room._id %>">Book This Room</a>
+<% } else { %>
+  <p><a href="/login">Login</a> to book.</p>
+<% } %>
+
+<%- include('../partials/footer') %>

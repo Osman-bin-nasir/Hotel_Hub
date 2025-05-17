@@ -1,0 +1,20 @@
+<nav>
+  <a href="/" class="<%= (currentPath || '') === '/' ? 'active' : '' %>">Home</a>
+  <% if (typeof session !== 'undefined' && !session.userId) { %>
+    <a href="/auth/login" class="<%= (currentPath || '').startsWith('/auth') ? 'active' : '' %>">
+      Login/Register
+    </a>
+  <% } else { %>
+    <% if (typeof session !== 'undefined') { %>
+      <a href="/bookings" class="<%= (currentPath || '').startsWith('/bookings') ? 'active' : '' %>">
+        My Bookings
+      </a>
+      <% if (session.role === 'admin') { %>
+        <a href="/admin" class="<%= (currentPath || '').startsWith('/admin') ? 'active' : '' %>">
+          Admin
+        </a>
+      <% } %>
+      <a href="/logout">Logout</a>
+    <% } %>
+  <% } %>
+</nav>

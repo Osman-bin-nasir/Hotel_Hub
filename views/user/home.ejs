@@ -1,0 +1,14 @@
+<%- include('../partials/header') %>
+<%- include('../partials/nav') %>
+
+<h2>Available Rooms</h2>
+<ul>
+  <% rooms.forEach(room => { %>
+    <li>
+      <h3><%= room.name %> - $<%= room.price %>/night</h3>
+      <a href="/rooms/<%= room._id %>">View Details</a>
+    </li>
+  <% }) %>
+</ul>
+
+<%- include('../partials/footer') %>

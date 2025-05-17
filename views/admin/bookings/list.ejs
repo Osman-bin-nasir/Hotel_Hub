@@ -1,0 +1,40 @@
+<%- include('../../partials/header', { title: 'Manage Bookings' }) %>
+<%- include('../../partials/nav') %>
+
+<div class="container mt-4">
+    <% if (messages.success) { %>
+        <div class="alert alert-success"><%= messages.success %></div>
+    <% } %>
+    
+    <h1 class="mb-4">Manage Bookings</h1>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Room</th>
+                <th>Check-In</th>
+                <th>Check-Out</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% bookings.forEach(booking => { %>
+                <tr>
+                    <td><%= booking.user.name %></td>
+                    <td><%= booking.room.name %></td>
+                    <td><%= booking.checkIn.toDateString() %></td>
+                    <td><%= booking.checkOut.toDateString() %></td>
+                    <td>
+                        <form action="/admin/bookings/<%= booking._id %>/delete" method="POST">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                            <button type="submit" class="btn btn-sm btn-danger">Cancel</button>
+                        </form>
+                    </td>
+                </tr>
+            <% }) %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../../partials/footer') %>

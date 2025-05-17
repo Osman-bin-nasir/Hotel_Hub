@@ -1,0 +1,15 @@
+<%- include('../partials/header', { title: 'Register' }) %>
+<%- include('../partials/nav') %>
+
+<h2>Register</h2>
+<form method="POST" action="/register">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <label>Name: <input type="text" name="name"></label>
+  <label>Email: <input type="email" name="email"></label>
+  <label>Password: <input type="password" name="password"></label>
+  <button type="submit">Register</button>
+</form>
+
+<% errors.forEach(e => { %><p style="color:red;"><%= e.msg %></p><% }) %>
+
+<%- include('../partials/footer') %>

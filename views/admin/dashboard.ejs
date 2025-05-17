@@ -1,0 +1,57 @@
+<%- include('../partials/header', { title: 'Admin Dashboard' }) %>
+<%- include('../partials/nav') %>
+
+<div class="container mt-4">
+    <% if (messages.success) { %>
+        <div class="alert alert-success"><%= messages.success %></div>
+    <% } %>
+    <% if (messages.error) { %>
+        <div class="alert alert-danger"><%= messages.error %></div>
+    <% } %>
+
+    <h1 class="mb-4">Admin Dashboard</h1>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Rooms</h5>
+                    <p class="display-4"><%= roomCount %></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Bookings</h5>
+                    <p class="display-4"><%= bookingCount %></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="mt-5">Recent Bookings</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Room</th>
+                <th>Check-In</th>
+                <th>Check-Out</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% recentBookings.forEach(booking => { %>
+                <tr>
+                    <td><%= booking.user.name %></td>
+                    <td><%= booking.room.name %></td>
+                    <td><%= booking.checkIn.toDateString() %></td>
+                    <td><%= booking.checkOut.toDateString() %></td>
+                </tr>
+            <% }) %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../partials/footer') %>

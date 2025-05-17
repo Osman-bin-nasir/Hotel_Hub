@@ -1,0 +1,17 @@
+<%- include('partials/header', { title: title }) %>
+<%- include('partials/nav', { 
+  currentPath: currentPath,
+  session: session 
+}) %>
+
+<div class="container mt-5">
+  <h1 class="text-danger"><%= title %></h1>
+  <div class="alert alert-danger">
+    <%= error.message %>
+  </div>
+  <% if (error.stack && process.env.NODE_ENV !== 'production') { %>
+    <pre><%= error.stack %></pre>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

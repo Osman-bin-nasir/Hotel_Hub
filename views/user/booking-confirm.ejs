@@ -1,0 +1,9 @@
+<%- include('../partials/header') %>
+<%- include('../partials/nav') %>
+
+<h2>Booking Confirmed!</h2>
+<p>You booked <strong><%= booking.room.name %></strong></p>
+<p>Check-in: <%= booking.checkIn.toDateString() %></p>
+<p>Check-out: <%= booking.checkOut.toDateString() %></p>
+
+<%- include('../partials/footer') %>
