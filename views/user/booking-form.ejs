@@ -3,7 +3,6 @@
 
 <h2>Book: <%= room.name %></h2>
 <form method="POST" action="/bookings">
-  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <input type="hidden" name="roomId" value="<%= room._id %>">
   <label>Check-in: <input type="date" name="checkIn"></label>
   <label>Check-out: <input type="date" name="checkOut"></label>

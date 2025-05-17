@@ -27,7 +27,7 @@
                     <td>
                         <a href="/admin/rooms/<%= room._id %>/edit" class="btn btn-sm btn-warning">Edit</a>
                         <form action="/admin/rooms/<%= room._id %>/delete" method="POST" class="d-inline">
-                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                            <!-- <input type="hidden" name="_csrf" value="<%= csrfToken %>"> -->
                             <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                         </form>
                     </td>

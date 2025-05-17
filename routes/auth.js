@@ -1,4 +1,3 @@
-// routes/auth.js
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
@@ -7,11 +6,22 @@ const router = express.Router();
 
 // GET /register
 router.get('/register', (req, res) => {
-  res.render('auth/register', { 
-    title: 'Register',
-    errors: [],
-    csrfToken: res.locals.csrfToken
-  });
+  console.log('Handling GET /auth/register route');
+  try {
+    res.render('auth/register', { 
+      title: 'Register',
+      errors: [],
+      csrfToken: null
+    });
+  } catch (err) {
+    console.error('Error rendering auth/register:', err);
+    res.status(500).render('error', {
+      title: '500 Error',
+      error: { message: 'Error rendering registration page' },
+      currentPath: req.path,
+      session: req.session
+    });
+  }
 });
 
 // POST /register
@@ -22,10 +32,11 @@ router.post('/register', [
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('Validation errors during registration:', errors.array());
     return res.render('auth/register', {
       title: 'Register',
       errors: errors.array(),
-      csrfToken: res.locals.csrfToken
+      csrfToken: null
     });
   }
 
@@ -34,24 +45,38 @@ router.post('/register', [
     const exists = await User.findOne({ email });
     
     if (exists) {
+      console.log('Email already in use:', email);
       return res.render('auth/register', {
         title: 'Register',
         errors: [{ msg: 'Email already in use' }],
-        csrfToken: res.locals.csrfToken
+        csrfToken: null
       });
     }
 
     const hash = await bcrypt.hash(password, 12);
     const user = await User.create({ name, email, password: hash });
     
+    console.log('User registered successfully:', email);
     req.session.userId = user._id;
     req.session.role = user.role;
-    res.redirect('/');
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error during registration:', err);
+        return res.render('auth/register', {
+          title: 'Register',
+          errors: [{ msg: 'Session save failed' }],
+          csrfToken: null
+        });
+      }
+      console.log('Session saved successfully after registration:', req.session);
+      res.redirect('/');
+    });
   } catch (err) {
+    console.error('Error during registration:', err.message);
     res.render('auth/register', {
       title: 'Register',
       errors: [{ msg: 'Registration failed' }],
-      csrfToken: res.locals.csrfToken
+      csrfToken: null
     });
   }
 });
@@ -61,7 +86,7 @@ router.get('/login', (req, res) => {
   res.render('auth/login', { 
     title: 'Login',
     errors: [],
-    csrfToken: res.locals.csrfToken
+    csrfToken: null
   });
 });
 
@@ -72,43 +97,72 @@ router.post('/login', [
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('Validation errors during login:', errors.array());
     return res.render('auth/login', {
       title: 'Login',
       errors: errors.array(),
-      csrfToken: res.locals.csrfToken
+      csrfToken: null
     });
   }
 
   try {
     const { email, password } = req.body;
+    console.log('Attempting login for:', email);
     const user = await User.findOne({ email });
     
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user) {
+      console.log('User not found:', email);
       return res.render('auth/login', {
         title: 'Login',
         errors: [{ msg: 'Invalid credentials' }],
-        csrfToken: res.locals.csrfToken
+        csrfToken: null
       });
     }
 
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      console.log('Password mismatch for:', email);
+      return res.render('auth/login', {
+        title: 'Login',
+        errors: [{ msg: 'Invalid credentials' }],
+        csrfToken: null
+      });
+    }
+
+    console.log('Login successful, setting session for:', email);
     req.session.userId = user._id;
     req.session.role = user.role;
-    res.redirect('/');
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error during login:', err);
+        return res.render('auth/login', {
+          title: 'Login',
+          errors: [{ msg: 'Session save failed' }],
+          csrfToken: null
+        });
+      }
+      console.log('Session saved successfully after login:', req.session);
+      res.redirect('/');
+    });
   } catch (err) {
+    console.error('Error during login:', err.message);
     res.render('auth/login', {
       title: 'Login',
       errors: [{ msg: 'Login failed' }],
-      csrfToken: res.locals.csrfToken
+      csrfToken: null
     });
   }
 });
 
 // GET /logout
 router.get('/logout', (req, res) => {
+  console.log('Logging out user:', req.session.userId);
   req.session.destroy(err => {
-    if (err) console.error(err);
+    if (err) {
+      console.error('Error during logout:', err);
+    }
     res.clearCookie('sid');
-    res.redirect('/login');
+    res.redirect('/auth/login');
   });
 });
 

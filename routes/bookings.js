@@ -19,7 +19,7 @@ router.get('/new/:roomId', ensureAuth, async (req, res, next) => {
       title: `Book ${room.name}`,
       room,
       errors: [],
-      csrfToken: req.csrfToken()
+      session: req.session // Added session for nav.ejs
     });
   } catch (err) {
     next(err);
@@ -48,18 +48,18 @@ router.post('/', ensureAuth, [
         title: `Book ${room.name}`,
         room,
         errors: errors.array(),
-        csrfToken: req.csrfToken()
+        session: req.session // Added session for nav.ejs
       });
     }
 
     // Availability Check
     const existingBooking = await Booking.findOne({
-        room: roomId,
-        $or: [
-          { checkIn: { $lt: new Date(checkOut) } },  // Added closing }
-          { checkOut: { $gt: new Date(checkIn) } }   // Fixed object structure
-        ]
-      });
+      room: roomId,
+      $or: [
+        { checkIn: { $lt: new Date(checkOut) } },
+        { checkOut: { $gt: new Date(checkIn) } }
+      ]
+    });
 
     if (existingBooking) {
       const room = await Room.findById(roomId);
@@ -67,7 +67,7 @@ router.post('/', ensureAuth, [
         title: `Book ${room.name}`,
         room,
         errors: [{ msg: 'Room not available for selected dates' }],
-        csrfToken: req.csrfToken()
+        session: req.session // Added session for nav.ejs
       });
     }
 
@@ -100,7 +100,8 @@ router.get('/confirm/:id', ensureAuth, async (req, res, next) => {
     res.render('user/booking-confirm', {
       title: 'Booking Confirmed',
       booking,
-      success: req.flash('success')
+      success: req.flash('success'),
+      session: req.session // Added session for nav.ejs
     });
   } catch (err) {
     next(err);

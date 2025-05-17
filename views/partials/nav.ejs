@@ -1,8 +1,11 @@
 <nav>
   <a href="/" class="<%= (currentPath || '') === '/' ? 'active' : '' %>">Home</a>
   <% if (typeof session !== 'undefined' && !session.userId) { %>
-    <a href="/auth/login" class="<%= (currentPath || '').startsWith('/auth') ? 'active' : '' %>">
-      Login/Register
+    <a href="/auth/login" class="<%= (currentPath || '').startsWith('/auth/login') ? 'active' : '' %>">
+      Login
+    </a>
+    <a href="/auth/register" class="<%= (currentPath || '').startsWith('/auth/register') ? 'active' : '' %>">
+      Register
     </a>
   <% } else { %>
     <% if (typeof session !== 'undefined') { %>

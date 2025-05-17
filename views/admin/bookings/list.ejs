@@ -27,7 +27,7 @@
                     <td><%= booking.checkOut.toDateString() %></td>
                     <td>
                         <form action="/admin/bookings/<%= booking._id %>/delete" method="POST">
-                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    
                             <button type="submit" class="btn btn-sm btn-danger">Cancel</button>
                         </form>
                     </td>
