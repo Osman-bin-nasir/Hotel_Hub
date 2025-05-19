@@ -1,20 +1,41 @@
-// routes/rooms.js
 const express = require('express');
-const router  = express.Router();
-const Room    = require('../models/Room');
+const router = express.Router();
+const Room = require('../models/Room');
 
-// GET /rooms  → list all rooms
-router.get('/', async (req, res) => {
-  const rooms = await Room.find();
-  res.render('rooms', { title: 'Rooms', rooms });
+// GET /rooms - List all rooms
+router.get('/', async (req, res, next) => {
+  try {
+    const rooms = await Room.find();
+    res.render('rooms', {
+      title: 'Rooms',
+      rooms,
+      session: req.session,
+      currentPath: req.path,
+      messages: { success: req.flash('success'), error: req.flash('error') }
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
-// POST /rooms → create a new room
-router.post('/', async (req, res) => {
-  const { number, category, price } = req.body;
-  const room = new Room({ number, category, price });
-  await room.save();
-  res.status(201).json(room);
+// GET /rooms/:id - Show room details
+router.get('/:id', async (req, res, next) => {
+  try {
+    const room = await Room.findById(req.params.id);
+    if (!room) {
+      req.flash('error', 'Room not found');
+      return res.redirect('/rooms');
+    }
+    res.render('rooms/details', {
+      title: room.name,
+      room,
+      session: req.session,
+      currentPath: req.path,
+      messages: { success: req.flash('success'), error: req.flash('error') }
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = router;

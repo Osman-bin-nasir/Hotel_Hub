@@ -23,7 +23,10 @@ router.get('/', ensureAdmin, async (req, res, next) => {
       title: 'Admin Dashboard',
       roomCount,
       bookingCount,
-      recentBookings
+      recentBookings,
+      session: req.session,
+      currentPath: req.path,
+      messages: { success: req.flash('success'), error: req.flash('error') }
     });
   } catch (err) {
     next(err);
@@ -38,7 +41,10 @@ router.get('/rooms', ensureAdmin, async (req, res, next) => {
     const rooms = await Room.find().sort({ createdAt: -1 });
     res.render('admin/rooms/list', {
       title: 'Manage Rooms',
-      rooms
+      rooms,
+      session: req.session,
+      currentPath: req.path,
+      messages: { success: req.flash('success'), error: req.flash('error') }
     });
   } catch (err) {
     next(err);
@@ -49,51 +55,80 @@ router.get('/rooms/new', ensureAdmin, (req, res) => {
   res.render('admin/rooms/form', {
     title: 'Create New Room',
     room: null,
-    errors: []
+    errors: req.flash('errors') || [],
+    session: req.session,
+    currentPath: req.path,
+    messages: { success: req.flash('success'), error: req.flash('error') }
   });
 });
 
-router.post('/rooms', ensureAdmin, [
-  body('name').trim().notEmpty().withMessage('Name is required'),
-  body('description').trim().notEmpty().withMessage('Description is required'),
-  body('price').isFloat({ min: 1 }).withMessage('Valid price required'),
-  body('capacity').isInt({ min: 1 }).withMessage('Valid capacity required'),
-  body('amenities').optional().isArray()
-], async (req, res, next) => {
-  try {
-    const errors = validationResult(req);
-    const roomData = {
-      name: req.body.name,
-      description: req.body.description,
-      price: req.body.price,
-      capacity: req.body.capacity,
-      amenities: Array.isArray(req.body.amenities) ? req.body.amenities : []
-    };
+router.post(
+  '/rooms',
+  ensureAdmin,
+  [
+    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('category')
+      .notEmpty()
+      .withMessage('Category is required')
+      .isIn(['Standard', 'Deluxe', 'Suite'])
+      .withMessage('Invalid category'),
+    body('number').trim().notEmpty().withMessage('Room number is required'),
+    body('description').trim().notEmpty().withMessage('Description is required'),
+    body('price').isFloat({ min: 1 }).withMessage('Valid price required'),
+    body('capacity').isInt({ min: 1 }).withMessage('Valid capacity required'),
+    body('amenities').optional().isArray().withMessage('Amenities must be an array')
+  ],
+  async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      const roomData = {
+        name: req.body.name,
+        category: req.body.category,
+        number: req.body.number,
+        description: req.body.description,
+        price: parseFloat(req.body.price),
+        capacity: parseInt(req.body.capacity),
+        amenities: Array.isArray(req.body.amenities) ? req.body.amenities : []
+      };
 
-    if (!errors.isEmpty()) {
-      return res.render('admin/rooms/form', {
-        title: 'Create New Room',
-        room: roomData,
-        errors: errors.array()
+      if (!errors.isEmpty()) {
+        req.flash('errors', errors.array());
+        return res.render('admin/rooms/form', {
+          title: 'Create New Room',
+          room: roomData,
+          errors: errors.array(),
+          session: req.session,
+          currentPath: req.path,
+          messages: { success: req.flash('success'), error: req.flash('error') }
+        });
+      }
+
+      const existingRoom = await Room.findOne({
+        $or: [{ name: roomData.name }, { number: roomData.number }]
       });
-    }
+      if (existingRoom) {
+        req.flash('errors', [
+          { msg: 'Room with this name or number already exists' }
+        ]);
+        return res.render('admin/rooms/form', {
+          title: 'Create New Room',
+          room: roomData,
+          errors: [{ msg: 'Room with this name or number already exists' }],
+          session: req.session,
+          currentPath: req.path,
+          messages: { success: req.flash('success'), error: req.flash('error') }
+        });
+      }
 
-    const existingRoom = await Room.findOne({ name: roomData.name });
-    if (existingRoom) {
-      return res.render('admin/rooms/form', {
-        title: 'Create New Room',
-        room: roomData,
-        errors: [{ msg: 'Room with this name already exists' }]
-      });
+      await Room.create(roomData);
+      req.flash('success', 'Room created successfully');
+      res.redirect('/admin/rooms');
+    } catch (err) {
+      req.flash('error', err.message || 'Error creating room');
+      res.redirect('/admin/rooms/new');
     }
-
-    await Room.create(roomData);
-    req.flash('success', 'Room created successfully');
-    res.redirect('/admin/rooms');
-  } catch (err) {
-    next(err);
   }
-});
+);
 
 router.get('/rooms/:id/edit', ensureAdmin, async (req, res, next) => {
   try {
@@ -106,58 +141,85 @@ router.get('/rooms/:id/edit', ensureAdmin, async (req, res, next) => {
     res.render('admin/rooms/form', {
       title: 'Edit Room',
       room,
-      errors: []
+      errors: req.flash('errors') || [],
+      session: req.session,
+      currentPath: req.path,
+      messages: { success: req.flash('success'), error: req.flash('error') }
     });
   } catch (err) {
     next(err);
   }
 });
 
-router.post('/rooms/:id', ensureAdmin, [
-  body('name').trim().notEmpty().withMessage('Name is required'),
-  body('description').trim().notEmpty().withMessage('Description is required'),
-  body('price').isFloat({ min: 1 }).withMessage('Valid price required'),
-  body('capacity').isInt({ min: 1 }).withMessage('Valid capacity required'),
-  body('amenities').optional().isArray()
-], async (req, res, next) => {
-  try {
-    const errors = validationResult(req);
-    const roomData = {
-      name: req.body.name,
-      description: req.body.description,
-      price: req.body.price,
-      capacity: req.body.capacity,
-      amenities: Array.isArray(req.body.amenities) ? req.body.amenities : []
-    };
+router.put(
+  '/rooms/:id',
+  ensureAdmin,
+  [
+    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('category')
+      .notEmpty()
+      .withMessage('Category is required')
+      .isIn(['Standard', 'Deluxe', 'Suite'])
+      .withMessage('Invalid category'),
+    body('number').trim().notEmpty().withMessage('Room number is required'),
+    body('description').trim().notEmpty().withMessage('Description is required'),
+    body('price').isFloat({ min: 1 }).withMessage('Valid price required'),
+    body('capacity').isInt({ min: 1 }).withMessage('Valid capacity required'),
+    body('amenities').optional().isArray().withMessage('Amenities must be an array')
+  ],
+  async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      const roomData = {
+        name: req.body.name,
+        category: req.body.category,
+        number: req.body.number,
+        description: req.body.description,
+        price: parseFloat(req.body.price),
+        capacity: parseInt(req.body.capacity),
+        amenities: Array.isArray(req.body.amenities) ? req.body.amenities : []
+      };
 
-    if (!errors.isEmpty()) {
-      return res.render('admin/rooms/form', {
-        title: 'Edit Room',
-        room: { ...roomData, _id: req.params.id },
-        errors: errors.array()
+      if (!errors.isEmpty()) {
+        req.flash('errors', errors.array());
+        return res.render('admin/rooms/form', {
+          title: 'Edit Room',
+          room: { ...roomData, _id: req.params.id },
+          errors: errors.array(),
+          session: req.session,
+          currentPath: req.path,
+          messages: { success: req.flash('success'), error: req.flash('error') }
+        });
+      }
+
+      const existingRoom = await Room.findOne({
+        $or: [{ name: roomData.name }, { number: roomData.number }],
+        _id: { $ne: req.params.id }
       });
+
+      if (existingRoom) {
+        req.flash('errors', [
+          { msg: 'Room with this name or number already exists' }
+        ]);
+        return res.render('admin/rooms/form', {
+          title: 'Edit Room',
+          room: { ...roomData, _id: req.params.id },
+          errors: [{ msg: 'Room with this name or number already exists' }],
+          session: req.session,
+          currentPath: req.path,
+          messages: { success: req.flash('success'), error: req.flash('error') }
+        });
+      }
+
+      await Room.findByIdAndUpdate(req.params.id, roomData);
+      req.flash('success', 'Room updated successfully');
+      res.redirect('/admin/rooms');
+    } catch (err) {
+      req.flash('error', err.message || 'Error updating room');
+      res.redirect(`/admin/rooms/${req.params.id}/edit`);
     }
-
-    const existingRoom = await Room.findOne({
-      name: roomData.name,
-      _id: { $ne: req.params.id }
-    });
-
-    if (existingRoom) {
-      return res.render('admin/rooms/form', {
-        title: 'Edit Room',
-        room: { ...roomData, _id: req.params.id },
-        errors: [{ msg: 'Room with this name already exists' }]
-      });
-    }
-
-    await Room.findByIdAndUpdate(req.params.id, roomData);
-    req.flash('success', 'Room updated successfully');
-    res.redirect('/admin/rooms');
-  } catch (err) {
-    next(err);
   }
-});
+);
 
 router.post('/rooms/:id/delete', ensureAdmin, async (req, res, next) => {
   try {
@@ -180,7 +242,10 @@ router.get('/bookings', ensureAdmin, async (req, res, next) => {
 
     res.render('admin/bookings/list', {
       title: 'Manage Bookings',
-      bookings
+      bookings,
+      session: req.session,
+      currentPath: req.path,
+      messages: { success: req.flash('success'), error: req.flash('error') }
     });
   } catch (err) {
     next(err);

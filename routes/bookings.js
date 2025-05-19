@@ -10,13 +10,13 @@ const router = express.Router();
 router.get('/', ensureAuth, async (req, res, next) => {
   try {
     const bookings = await Booking.find({ user: req.session.userId })
-      .populate('room user')
-      .lean();
+      .populate('room')
+      .populate('user'); // Keep if needed
 
     res.render('user/booking-list', {
       title: 'Booking List',
       bookings,
-      success: req.flash('success'), // Add flash messages
+      success: req.flash('success'),
       session: req.session
     });
   } catch (err) {
@@ -26,7 +26,6 @@ router.get('/', ensureAuth, async (req, res, next) => {
 
 // GET Booking Form
 router.get('/new/:roomId', ensureAuth, async (req, res, next) => {
-  console.log('🔍 [GET /bookings/new] incoming cookies:', req.cookies);
   try {
     const room = await Room.findById(req.params.roomId);
     if (!room) {
@@ -36,17 +35,14 @@ router.get('/new/:roomId', ensureAuth, async (req, res, next) => {
 
     const user = await User.findById(req.session.userId).lean();
 
-    const renderData = {
+    res.render('user/booking-form', {
       title: `Book ${room.name}`,
       room,
       user,
       errors: [],
       formData: {},
       session: req.session
-    };
-    console.log('🔍 [GET /bookings/new] Rendering data:', renderData);
-
-    res.render('user/booking-form', renderData);
+    });
   } catch (err) {
     next(err);
   }
@@ -68,50 +64,44 @@ router.post('/', ensureAuth, [
   body('phone').matches(/^[0-9]{10}$/).withMessage('Phone number must be 10 digits')
 ], async (req, res, next) => {
   try {
-    console.log('🔍 [POST /bookings] Form data:', req.body);
     const errors = validationResult(req);
     const { roomId, checkIn, checkOut, name, email, phone } = req.body;
-    
+
     if (!errors.isEmpty()) {
       const room = await Room.findById(roomId);
       const user = await User.findById(req.session.userId).lean();
-      const renderData = {
+      return res.render('user/booking-form', {
         title: `Book ${room.name}`,
         room,
         user,
         errors: errors.array(),
         formData: req.body || {},
         session: req.session
-      };
-      console.log('🔍 [POST /bookings] Rendering data on validation error:', renderData);
-      return res.render('user/booking-form', renderData);
+      });
     }
 
-    // Availability Check
+    // Check for overlapping bookings
     const existingBooking = await Booking.findOne({
       room: roomId,
       $or: [
-        { checkIn: { $lt: new Date(checkOut) } },
-        { checkOut: { $gt: new Date(checkIn) } }
+        { checkIn: { $lt: new Date(checkOut) }, checkOut: { $gt: new Date(checkIn) } }
       ]
     });
 
     if (existingBooking) {
       const room = await Room.findById(roomId);
       const user = await User.findById(req.session.userId).lean();
-      const renderData = {
+      return res.render('user/booking-form', {
         title: `Book ${room.name}`,
         room,
         user,
         errors: [{ msg: 'Room not available for selected dates' }],
         formData: req.body || {},
         session: req.session
-      };
-      console.log('🔍 [POST /bookings] Rendering data on availability error:', renderData);
-      return res.render('user/booking-form', renderData);
+      });
     }
 
-    // Create Booking
+    // Create booking
     const booking = await Booking.create({
       user: req.session.userId,
       room: roomId,
@@ -122,7 +112,7 @@ router.post('/', ensureAuth, [
       phone
     });
 
-    // Update room availability
+    // Mark room as unavailable
     const room = await Room.findById(roomId);
     room.isAvailable = false;
     await room.save();
@@ -138,7 +128,8 @@ router.post('/', ensureAuth, [
 router.get('/confirm/:id', ensureAuth, async (req, res, next) => {
   try {
     const booking = await Booking.findById(req.params.id)
-      .populate('room user');
+      .populate('room')
+      .populate('user');
 
     if (!booking) {
       req.flash('error', 'Booking not found');

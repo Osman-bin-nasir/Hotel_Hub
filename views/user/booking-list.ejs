@@ -21,11 +21,11 @@
       <tbody>
         <% bookings.forEach(booking => { %>
           <tr>
-            <td><%= booking.room.name %></td>
+            <td><%= booking.room ? booking.room.name : 'Room unavailable' %></td>
             <td><%= new Date(booking.checkIn).toLocaleDateString() %></td>
             <td><%= new Date(booking.checkOut).toLocaleDateString() %></td>
             <td>
-              <a href="/bookings/confirm/<%= booking._id %>" class="btn btn-sm btn-info">View</a>
+                <a href="/bookings/confirm/<%= booking._id %>" class="btn btn-sm btn-info">View</a>
               <form action="/bookings/<%= booking._id %>?_method=DELETE" method="POST" style="display:inline;">
                 <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel</button>
               </form>

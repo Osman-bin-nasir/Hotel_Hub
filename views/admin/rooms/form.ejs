@@ -1,10 +1,10 @@
-<%- include('../../partials/header', { title: title }) %>
+<%- include('../../partials/header', { title: room ? 'Edit Room' : 'Add New Room' }) %>
 <%- include('../../partials/nav') %>
 
 <div class="container mt-4">
-    <h1 class="mb-4"><%= title %></h1>
+    <h1 class="mb-4"><%= room ? 'Edit Room' : 'Add New Room' %></h1>
     
-    <% if (errors.length > 0) { %>
+    <% if (errors && errors.length > 0) { %>
         <div class="alert alert-danger">
             <% errors.forEach(error => { %>
                 <p><%= error.msg %></p>
@@ -12,50 +12,65 @@
         </div>
     <% } %>
 
-    <form action="/admin/rooms/<%= room._id || '' %>" method="POST">
-
-        <% if (room._id) { %>
+    <form action="<%= room && room._id ? '/admin/rooms/' + room._id : '/admin/rooms' %>" method="POST">
+        <% if (room && room._id) { %>
             <input type="hidden" name="_method" value="PUT">
         <% } %>
 
-        <div class="form-group">
-            <label>Room Name</label>
-            <input type="text" name="name" class="form-control" 
-                   value="<%= room.name || '' %>" required>
+        <div class="mb-3">
+            <label for="name" class="form-label">Room Name</label>
+            <input type="text" name="name" class="form-control" id="name"
+                   value="<%= room && room.name ? room.name : '' %>" required>
         </div>
 
-        <div class="form-group">
-            <label>Description</label>
-            <textarea name="description" class="form-control" 
-                      required><%= room.description || '' %></textarea>
+        <div class="mb-3">
+            <label for="category" class="form-label">Category</label>
+            <select name="category" class="form-control" id="category" required>
+                <option value="" disabled <%= !room || !room.category ? 'selected' : '' %>>Select Category</option>
+                <option value="Standard" <%= room && room.category === 'Standard' ? 'selected' : '' %>>Standard</option>
+                <option value="Deluxe" <%= room && room.category === 'Deluxe' ? 'selected' : '' %>>Deluxe</option>
+                <option value="Suite" <%= room && room.category === 'Suite' ? 'selected' : '' %>>Suite</option>
+            </select>
         </div>
 
-        <div class="form-group">
-            <label>Price per Night</label>
-            <input type="number" name="price" class="form-control" 
-                   step="0.01" value="<%= room.price || '' %>" required>
+        <div class="mb-3">
+            <label for="number" class="form-label">Room Number</label>
+            <input type="text" name="number" class="form-control" id="number"
+                   value="<%= room && room.number ? room.number : '' %>" required>
         </div>
 
-        <div class="form-group">
-            <label>Capacity</label>
-            <input type="number" name="capacity" class="form-control" 
-                   value="<%= room.capacity || '' %>" required>
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea name="description" class="form-control" id="description"
+                      required><%= room && room.description ? room.description : '' %></textarea>
         </div>
 
-        <div class="form-group">
-            <label>Amenities</label>
+        <div class="mb-3">
+            <label for="price" class="form-label">Price per Night</label>
+            <input type="number" name="price" class="form-control" id="price"
+                   step="0.01" value="<%= room && room.price ? room.price : '' %>" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="capacity" class="form-label">Capacity</label>
+            <input type="number" name="capacity" class="form-control" id="capacity"
+                   value="<%= room && room.capacity ? room.capacity : '' %>" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Amenities</label>
             <div class="row">
                 <div class="col-md-3">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="amenities" 
-                               value="WiFi" <%= room.amenities && room.amenities.includes('WiFi') ? 'checked' : '' %>>
+                               value="WiFi" <%= room && room.amenities && room.amenities.includes('WiFi') ? 'checked' : '' %>>
                         <label class="form-check-label">WiFi</label>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="amenities" 
-                               value="TV" <%= room.amenities && room.amenities.includes('TV') ? 'checked' : '' %>>
+                               value="TV" <%= room && room.amenities && room.amenities.includes('TV') ? 'checked' : '' %>>
                         <label class="form-check-label">TV</label>
                     </div>
                 </div>
@@ -64,8 +79,9 @@
         </div>
 
         <button type="submit" class="btn btn-primary">
-            <%= room._id ? 'Update' : 'Create' %> Room
+            <%= room && room._id ? 'Update' : 'Create' %> Room
         </button>
+        <a href="/admin" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
 

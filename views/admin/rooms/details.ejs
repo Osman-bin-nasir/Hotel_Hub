@@ -1,0 +1,25 @@
+<%- include('../../partials/header', { title: title }) %>
+<%- include('../../partials/nav') %>
+
+<div class="container mt-4">
+  <h1><%= room.name %></h1>
+
+  <p><strong>Price:</strong> $<%= room.price %> per night</p>
+  <p><strong>Capacity:</strong> <%= room.capacity %> people</p>
+  <p><strong>Description:</strong> <%= room.description %></p>
+
+  <p><strong>Amenities:</strong></p>
+  <ul>
+    <% if (room.amenities && room.amenities.length > 0) { %>
+      <% room.amenities.forEach(amenity => { %>
+        <li><%= amenity %></li>
+      <% }) %>
+    <% } else { %>
+      <li>No amenities listed</li>
+    <% } %>
+  </ul>
+
+  <a href="/bookings/new?roomId=<%= room._id %>" class="btn btn-primary">Book This Room</a>
+</div>
+
+<%- include('../../partials/footer') %>
